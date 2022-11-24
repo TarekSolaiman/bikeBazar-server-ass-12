@@ -41,15 +41,43 @@ async function run() {
   const productsDB = client.db("bikeBazar").collection("products");
   const usersDB = client.db("bikeBazar").collection("users");
   try {
+    // Admin verify
+    const verifyAdmin = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersDB.findOne(query);
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
+    // Admin verify
+    const verifySeller = async (req, res, next) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersDB.findOne(query);
+      if (user?.role !== "seller") {
+        return res.status(403).send({ message: "forbidden access" });
+      }
+      next();
+    };
+
     // read products API
     app.get("/products", async (req, res) => {
       const query = {};
       const result = await productsDB.find(query).toArray();
       res.send(result);
     });
+    app.get("/category/:cat", async (req, res) => {
+      const cat = req.params.cat;
+      const query = { category: cat };
+      const result = await productsDB.find(query).toArray();
+      res.send(result);
+    });
 
     // add products API
-    app.post("/products", async (req, res) => {
+    app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const query = req.body;
       const result = await productsDB.insertOne(query);
       res.send(result);
