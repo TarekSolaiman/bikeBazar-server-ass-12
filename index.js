@@ -40,6 +40,7 @@ function verifyJWT(req, res, next) {
 async function run() {
   const productsDB = client.db("bikeBazar").collection("products");
   const usersDB = client.db("bikeBazar").collection("users");
+  const bookedDB = client.db("bikeBazar").collection("booked");
   try {
     // Admin verify
     const verifyAdmin = async (req, res, next) => {
@@ -78,6 +79,20 @@ async function run() {
       const query = { email: email };
       const user = await usersDB.findOne(query);
       res.send({ isSeller: user?.role === "seller" });
+    });
+
+    // send JWT token
+    app.get("/jwt", async (req, res) => {
+      const email = req.query.email;
+      const filter = { email: email };
+      const user = await usersDB.findOne(filter);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "1h",
+        });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "" });
     });
 
     // read all user only admin
@@ -143,6 +158,7 @@ async function run() {
     //   const updateDoc = {
     //     $set: {
     //       available: "available",
+    //       report: false,
     //       advirtict: false,
     //       sellerVerify: false,
     //     },
@@ -177,18 +193,24 @@ async function run() {
       res.send(result);
     });
 
-    // send JWT token
-    app.get("/jwt", async (req, res) => {
-      const email = req.query.email;
-      const filter = { email: email };
-      const user = await usersDB.findOne(filter);
-      if (user) {
-        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
-          expiresIn: "1h",
-        });
-        return res.send({ accessToken: token });
-      }
-      res.status(403).send({ accessToken: "" });
+    // add Booked product in bookedDB
+    app.post("/booked", verifyJWT, async (req, res) => {
+      const bookedData = req.body;
+      const result = await bookedDB.insertOne(bookedData);
+      res.send(result);
+    });
+
+    // Reported item true
+    app.patch("/report/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          report: true,
+        },
+      };
+      const result = await productsDB.updateOne(query, updateDoc);
+      res.send(result);
     });
   } finally {
   }
