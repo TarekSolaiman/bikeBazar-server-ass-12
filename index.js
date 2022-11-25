@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -44,6 +44,7 @@ async function run() {
     // Admin verify
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
+      console.log("this is user Email ID : ", decodedEmail);
       const query = { email: decodedEmail };
       const user = await usersDB.findOne(query);
       if (user?.role !== "admin") {
@@ -51,6 +52,13 @@ async function run() {
       }
       next();
     };
+    // admin chake in db
+    app.get("/users/admin/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      res.send({ isAdmin: user?.role === "admin" });
+    });
 
     // Admin verify
     const verifySeller = async (req, res, next) => {
@@ -63,25 +71,60 @@ async function run() {
       next();
     };
 
-    // read products API
-    app.get("/products", async (req, res) => {
-      const query = {};
+    // read all user only admin
+    app.get("/admin/buyers", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { role: "buyer" };
+      const result = await usersDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // read all user only admin
+    app.get("/admin/sellers", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { role: "seller" };
+      const result = await usersDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // read products with Advirtict for advirtict section
+    app.get("/advirtict", async (req, res) => {
+      const query = { advirtict: true };
       const result = await productsDB.find(query).toArray();
       res.send(result);
     });
 
-    // add products API
+    // update Advirtict false for advirtict section
+    app.patch("/advirtict/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          advirtict: true,
+        },
+      };
+      const result = await productsDB.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
+    // add products in db with seller
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const query = req.body;
       const result = await productsDB.insertOne(query);
       res.send(result);
     });
 
-    // read seller all product
+    // read  all product in seller
     app.get("/myProducts", verifyJWT, verifySeller, async (req, res) => {
       const userEmail = req.decoded.email;
       const query = { email: userEmail };
       const result = await productsDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // delete product byb seller
+    app.delete("/myProducts/:id", verifyJWT, verifySeller, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsDB.deleteOne(query);
       res.send(result);
     });
 
@@ -128,7 +171,6 @@ async function run() {
     // send JWT token
     app.get("/jwt", async (req, res) => {
       const email = req.query.email;
-      console.log(email);
       const filter = { email: email };
       const user = await usersDB.findOne(filter);
       if (user) {
