@@ -52,6 +52,7 @@ async function run() {
       }
       next();
     };
+
     // admin chake in db
     app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
@@ -70,6 +71,14 @@ async function run() {
       }
       next();
     };
+
+    // seller chake in db
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      res.send({ isSeller: user?.role === "seller" });
+    });
 
     // read all user only admin
     app.get("/admin/buyers", verifyJWT, verifyAdmin, async (req, res) => {
