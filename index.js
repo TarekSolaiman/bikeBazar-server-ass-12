@@ -69,17 +69,45 @@ async function run() {
       const result = await productsDB.find(query).toArray();
       res.send(result);
     });
-    app.get("/category/:cat", async (req, res) => {
-      const cat = req.params.cat;
-      const query = { category: cat };
-      const result = await productsDB.find(query).toArray();
-      res.send(result);
-    });
 
     // add products API
     app.post("/products", verifyJWT, verifySeller, async (req, res) => {
       const query = req.body;
       const result = await productsDB.insertOne(query);
+      res.send(result);
+    });
+
+    // read seller all product
+    app.get("/myProducts", verifyJWT, verifySeller, async (req, res) => {
+      const userEmail = req.decoded.email;
+      const query = { email: userEmail };
+      const result = await productsDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // temporary api for add price filde in appointmentoption
+    // app.get("/available", async (req, res) => {
+    //   const filter = {};
+    //   const updateDoc = {
+    //     $set: {
+    //       available: "available",
+    //       advirtict: false,
+    //       sellerVerify: false,
+    //     },
+    //   };
+    //   const option = { upsert: true };
+    //   const result = await productsDB.updateMany(filter, updateDoc, option);
+    //   res.send(result);
+    // });
+
+    // read product with filter category
+    app.get("/category/:cat", async (req, res) => {
+      const cat = req.params.cat;
+      const query = {
+        category: cat,
+        available: "available",
+      };
+      const result = await productsDB.find(query).toArray();
       res.send(result);
     });
 
