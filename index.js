@@ -77,7 +77,19 @@ async function run() {
       const email = req.params.email;
       const query = { email: email };
       const user = await usersDB.findOne(query);
-      res.send({ isSeller: user?.role === "seller" });
+      res.send({
+        isSeller: user?.role === "seller",
+      });
+    });
+
+    // sellerVerify chake in db
+    app.get("/users/verify/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const user = await usersDB.findOne(query);
+      res.send({
+        isSeller: user?.sellerVerify,
+      });
     });
 
     // send JWT token
@@ -234,6 +246,14 @@ async function run() {
     app.get("/users", verifyJWT, async (req, res) => {
       const query = {};
       const result = await usersDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // read all orders for seller
+    app.get("/myOrders/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { sellerEmail: email };
+      const result = await bookedDB.find(query).toArray();
       res.send(result);
     });
 
