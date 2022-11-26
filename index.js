@@ -207,6 +207,14 @@ async function run() {
       res.send(result);
     });
 
+    // delete booking data for buyer
+    app.delete("/booked/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookedDB.deleteOne(query);
+      res.send(result);
+    });
+
     // Reported item true
     app.patch("/report/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
