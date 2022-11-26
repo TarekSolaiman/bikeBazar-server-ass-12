@@ -87,7 +87,7 @@ async function run() {
       const user = await usersDB.findOne(filter);
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
-          expiresIn: "1h",
+          expiresIn: "10h",
         });
         return res.send({ accessToken: token });
       }
@@ -101,10 +101,40 @@ async function run() {
       res.send(result);
     });
 
+    // delete buyer only Admin can do it
+    app.delete("/admin/buyers/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersDB.deleteOne(query);
+      res.send(result);
+    });
+
     // read all user only admin can do it
     app.get("/admin/sellers", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { role: "seller" };
       const result = await usersDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // delete seller only Admin can do it
+    app.delete("/admin/sellers/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await usersDB.deleteOne(query);
+      res.send(result);
+    });
+
+    // Make Seller verifyed true only Admin can do it
+    app.patch("/admin/sellers/:email", async (req, res) => {
+      const sellerEmail = req.params.email;
+      const query = { email: sellerEmail };
+      const updateDoc = {
+        $set: {
+          sellerVerify: true,
+        },
+      };
+      const ProductResult = await productsDB.updateMany(query, updateDoc);
+      const result = await usersDB.updateOne(query, updateDoc);
       res.send(result);
     });
 
