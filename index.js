@@ -94,17 +94,32 @@ async function run() {
       res.status(403).send({ accessToken: "" });
     });
 
-    // read all user only admin
+    // read all user only admin can do it
     app.get("/admin/buyers", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { role: "buyer" };
       const result = await usersDB.find(query).toArray();
       res.send(result);
     });
 
-    // read all user only admin
+    // read all user only admin can do it
     app.get("/admin/sellers", verifyJWT, verifyAdmin, async (req, res) => {
       const query = { role: "seller" };
       const result = await usersDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // read reported item Only Admin can do it
+    app.get("/admin/report", verifyJWT, verifyAdmin, async (req, res) => {
+      const query = { report: true };
+      const result = await productsDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // Delete reorted item Only Admin can do it
+    app.delete("/admin/report/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await productsDB.deleteOne(query);
       res.send(result);
     });
 
@@ -200,7 +215,7 @@ async function run() {
     });
 
     // reade booked data for buyer
-    app.get("/booked/:email", async (req, res) => {
+    app.get("/booked/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { buyerEmail: email };
       const result = await bookedDB.find(query).toArray();
@@ -208,7 +223,7 @@ async function run() {
     });
 
     // delete booking data for buyer
-    app.delete("/booked/:id", async (req, res) => {
+    app.delete("/booked/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const result = await bookedDB.deleteOne(query);
