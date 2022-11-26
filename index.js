@@ -45,7 +45,6 @@ async function run() {
     // Admin verify
     const verifyAdmin = async (req, res, next) => {
       const decodedEmail = req.decoded.email;
-      console.log("this is user Email ID : ", decodedEmail);
       const query = { email: decodedEmail };
       const user = await usersDB.findOne(query);
       if (user?.role !== "admin") {
@@ -144,7 +143,7 @@ async function run() {
       res.send(result);
     });
 
-    // delete product byb seller
+    // delete product by seller
     app.delete("/myProducts/:id", verifyJWT, verifySeller, async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
@@ -197,6 +196,14 @@ async function run() {
     app.post("/booked", verifyJWT, async (req, res) => {
       const bookedData = req.body;
       const result = await bookedDB.insertOne(bookedData);
+      res.send(result);
+    });
+
+    // reade booked data for buyer
+    app.get("/booked/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { buyerEmail: email };
+      const result = await bookedDB.find(query).toArray();
       res.send(result);
     });
 
