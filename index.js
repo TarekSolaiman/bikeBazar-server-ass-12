@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const jwt = require("jsonwebtoken");
 const app = express();
 const port = process.env.PORT || 5000;
@@ -41,6 +42,7 @@ async function run() {
   const productsDB = client.db("bikeBazar").collection("products");
   const usersDB = client.db("bikeBazar").collection("users");
   const bookedDB = client.db("bikeBazar").collection("booked");
+  const paymentDB = client.db("bikeBazar").collection("payment");
   try {
     // Admin verify
     const verifyAdmin = async (req, res, next) => {
@@ -105,6 +107,62 @@ async function run() {
       }
       res.status(403).send({ accessToken: "" });
     });
+
+    // payment proses ======================>
+
+    // Stripe payment proses ======>
+
+    app.post("/create-payment-intent", verifyJWT, async (req, res) => {
+      const booked = req.body;
+      const price = booked.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "USD",
+        payment_method_types: ["card"],
+      });
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // Stripe payment proses ======>
+
+    // After payment proses success full then update booking data ===>
+
+    app.post("/payments", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const result = await paymentDB.insertOne(payment);
+
+      const bookedId = payment.bookingId;
+      const productId = payment.productId;
+      const filter = { _id: ObjectId(bookedId) };
+      const option = { upsert: true };
+
+      const updateDoc = {
+        $set: {
+          paid: true,
+          transictionId: payment.transictionId,
+        },
+      };
+
+      const updateResult = await bookingDB.updateOne(filter, updateDoc, option);
+      res.send(result);
+    });
+
+    // After payment proses success full then update booking data ===>
+
+    // read booked data for payment
+    app.get("/booked/payment/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await bookedDB.findOne(query);
+      res.send(result);
+    });
+    // read booked data for payment
+    // payment proses ======================>
 
     // read all user only admin can do it
     app.get("/admin/buyers", verifyJWT, verifyAdmin, async (req, res) => {
