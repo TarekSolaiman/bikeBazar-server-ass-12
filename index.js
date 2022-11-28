@@ -284,23 +284,6 @@ async function run() {
       res.send(result);
     });
 
-    // temporary api for add price filde in appointmentoption
-    // app.get("/available", async (req, res) => {
-    //   const filter = {};
-    //   const updateDoc = {
-    //     $set: {
-    //       paid: false,
-    //       available: "available",
-    //       report: false,
-    //       advirtict: false,
-    //       sellerVerify: false,
-    //     },
-    //   };
-    //   const option = { upsert: true };
-    //   const result = await bookedDB.updateMany(filter, updateDoc, option);
-    //   res.send(result);
-    // });
-
     // read product with filter category
     app.get("/category/:cat", async (req, res) => {
       const cat = req.params.cat;
@@ -315,6 +298,12 @@ async function run() {
     // save user data
     app.post("/users", async (req, res) => {
       const query = req.body;
+      const email = query.email;
+      const filter = { email: email };
+      const isUser = await usersDB.find(filter).toArray();
+      if (isUser.length) {
+        return res.send({ message: "This user finded" });
+      }
       const result = await usersDB.insertOne(query);
       res.send(result);
     });
