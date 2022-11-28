@@ -134,22 +134,40 @@ async function run() {
 
     app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
+      console.log(payment);
       const result = await paymentDB.insertOne(payment);
 
-      const bookedId = payment.bookingId;
-      const productId = payment.productId;
-      const filter = { _id: ObjectId(bookedId) };
+      const bookingId = payment.bookingId;
+      console.log(bookingId);
+      const filter = { _id: ObjectId(bookingId) };
       const option = { upsert: true };
-
-      const updateDoc = {
+      const updateBooked = {
         $set: {
           paid: true,
           transictionId: payment.transictionId,
         },
       };
+      const bookedResult = await bookedDB.updateOne(
+        filter,
+        updateBooked,
+        option
+      );
 
-      const updateResult = await bookingDB.updateOne(filter, updateDoc, option);
-      res.send(result);
+      const productId = payment.productId;
+      console.log(productId);
+      const query = { _id: ObjectId(productId) };
+      const updateProduct = {
+        $set: {
+          available: "solde",
+        },
+      };
+      const productResult = await productsDB.updateOne(
+        query,
+        updateProduct,
+        option
+      );
+
+      res.send(productResult);
     });
 
     // After payment proses success full then update booking data ===>
@@ -225,7 +243,7 @@ async function run() {
 
     // read products with Advirtict for advirtict section
     app.get("/advirtict", async (req, res) => {
-      const query = { advirtict: true };
+      const query = { advirtict: true, available: "available" };
       const result = await productsDB.find(query).toArray();
       res.send(result);
     });
@@ -271,6 +289,7 @@ async function run() {
     //   const filter = {};
     //   const updateDoc = {
     //     $set: {
+    //       paid: false,
     //       available: "available",
     //       report: false,
     //       advirtict: false,
@@ -278,7 +297,7 @@ async function run() {
     //     },
     //   };
     //   const option = { upsert: true };
-    //   const result = await productsDB.updateMany(filter, updateDoc, option);
+    //   const result = await bookedDB.updateMany(filter, updateDoc, option);
     //   res.send(result);
     // });
 
