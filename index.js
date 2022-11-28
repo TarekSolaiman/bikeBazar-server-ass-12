@@ -357,6 +357,34 @@ async function run() {
       res.send(result);
     });
 
+    // Buyer payment detail for buyer
+    app.get("/payment/buyer/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { buyerEmail: email };
+      const result = await paymentDB.find(query).toArray();
+      res.send(result);
+    });
+
+    // Buyer payment detail for seller
+    app.get(
+      "/payment/seller/:email",
+      verifyJWT,
+      verifySeller,
+      async (req, res) => {
+        const email = req.params.email;
+        const query = { sellerEmail: email };
+        const result = await paymentDB.find(query).toArray();
+        res.send(result);
+      }
+    );
+
+    // Buyer payment detail for buyer
+    app.get("/payment/admin", async (req, res) => {
+      const query = {};
+      const result = await paymentDB.find(query).toArray();
+      res.send(result);
+    });
+
     // Reported item true
     app.patch("/report/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
